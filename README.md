@@ -30,4 +30,8 @@ Download with wget
 
     mkdir ../03_UMIExtract
     for FILE in $(ls *_R1.fastq.gz); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)_UMI --time=0-08:00:00 --mem-per-cpu=12G --ntasks=1 --cpus-per-task=1 --output=UMI_$(echo $FILE | cut -d'_' -f1).out --error=UMI_$(echo $FILE | cut -d'_' -f1).error --mail-type=END,FAIL --wrap "cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/02_NewName ;module load UMI-tools/1.0.1-foss-2021a; umi_tools extract --bc-pattern=NNNNNNNNNNNN --stdin=$FILE --stdout=../03_UMIExtract/$(echo $FILE | cut -d'_' -f1)_extracted_R1.fastq.gz --read2-in=$(echo $FILE | cut -d'_' -f1)_R2.fastq.gz --read2-out=../02_UMIExtract/$(echo $FILE | cut -d'_' -f1)_extracted_R2.fastq.gz"; sleep  1; done
-    
+
+## 4. Check quality
+
+    for FILE in $(ls *.fastq.gz); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)fastQC --time=0-08:00:00 --mem-per-cpu=24G --ntasks=1 --cpus-per-task=4 --output=$(echo $FILE | cut -d'_' -f1)_fastQC.out --error=$(echo $FILE | cut -d'_' -f1)_fastQC.error --mail-type=END,FAIL --wrap " cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/03_UMIExtract ; module load FastQC; fastqc -t 4 $FILE"; sleep  1; done
+
