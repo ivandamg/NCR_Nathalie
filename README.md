@@ -38,8 +38,7 @@ Download with wget
 
 ## 5. fastp trimming and filter reads
 
-        mkdir ../04_TrimmedData/
-    for FILE in $(ls *extracted_R1.fastq.gz); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)fastp --time=0-08:00:00 --mem-per-cpu=24G --ntasks=1 --cpus-per-task=4 --output=$(echo $FILE | cut -d'_' -f1)_fastp.out --error=$(echo $FILE | cut -d'_' -f1)_fastp.error --mail-type=END,FAIL --wrap " cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/03_UMIExtract ; module load FastQC; module load fastp/0.23.4-GCC-10.3.0; fastp --in1 $FILE --in2 $(echo $FILE | cut -d'_' -f1)_extracted_R2.fastq.gz --out1 ../04_TrimmedData/$(echo $FILE | cut -d'_' -f1)_R1_trimmed.fastq.gz --out2 ../04_TrimmedData/$(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz -h ../04_TrimmedData/$(echo $FILE | cut -d',' -f1)_fastp.html --thread 4; fastqc -t 4 ../04_TrimmedData/$(echo $FILE | cut -d'_' -f1)_R1_trimmed.fastq.gz; fastqc -t 4 ../04_TrimmedData/$(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz"; sleep  1; done
+        for FILE in $(ls *extracted_R1.fastq.gz); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)fastp --time=0-08:00:00 --mem-per-cpu=24G --ntasks=1 --cpus-per-task=4 --output=$(echo $FILE | cut -d'_' -f1)_fastp.out --error=$(echo $FILE | cut -d'_' -f1)_fastp.error --mail-type=END,FAIL --wrap " cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/03_UMIExtract ; module load FastQC; module load fastp/0.23.4-GCC-10.3.0; fastp --in1 $FILE --in2 $(echo $FILE | cut -d'_' -f1)_extracted_R2.fastq.gz --out1 ../04_TrimmedData2/$(echo $FILE | cut -d'_' -f1)_R1_trimmed.fastq.gz --out2 ../04_TrimmedData2/$(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz -h ../04_TrimmedData2/$(echo $FILE | cut -d',' -f1)_fastp.html --detect_adapter_for_pe --trim_poly_g --length_required 99 --thread 4; fastqc -t 4 ../04_TrimmedData2/$(echo $FILE | cut -d'_' -f1)_R1_trimmed.fastq.gz; fastqc -t 4 ../04_TrimmedData2/$(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz"; sleep  1; done
 
 
 # 6. index genome Rhizobia
@@ -51,8 +50,15 @@ Download with wget
 
 # 7. Map reads to rhizobia
 
-           for FILE in $(ls *_R1_trimmed.fastq.gz ); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)_1STAR --time=0-12:00:00 --mem-per-cpu=16G --ntasks=4 --cpus-per-task=1 --output=$(echo $FILE | cut -d'_' -f1)_STAR.out --error=$(echo $FILE | cut -d'_' -f1)_STAR.error --mail-type=END,FAIL --wrap "module load STAR/2.7.10a_alpha_220601-GCC-10.3.0; cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/04_TrimmedData; STAR --runThreadN 8 --genomeDir /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/00_References --readFilesIn $FILE $(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz --readFilesCommand zcat --outFileNamePrefix $(echo $FILE | cut -d'_' -f1)_MappedRhizobia --outSAMtype BAM SortedByCoordinate --limitBAMsortRAM 5919206202 --limitOutSJcollapsed 5000000"; sleep  1; done
+           mkdir ../05_MappedRhizobia/
+           for FILE in $(ls *_R1_trimmed.fastq.gz ); do echo $FILE; sbatch --partition=pibu_el8 --job-name=$(echo $FILE | cut -d'_' -f1)_1STAR --time=0-12:00:00 --mem-per-cpu=16G --ntasks=4 --cpus-per-task=1 --output=$(echo $FILE | cut -d'_' -f1)_STAR.out --error=$(echo $FILE | cut -d'_' -f1)_STAR.error --mail-type=END,FAIL --wrap "module load STAR/2.7.10a_alpha_220601-GCC-10.3.0; cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/04_TrimmedData2; STAR --runThreadN 8 --genomeDir /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/00_References --readFilesIn $FILE $(echo $FILE | cut -d'_' -f1)_R2_trimmed.fastq.gz --readFilesCommand zcat --outFileNamePrefix $(echo $FILE | cut -d'_' -f1)_ --outSAMtype BAM SortedByCoordinate --limitBAMsortRAM 5919206202 --limitOutSJcollapsed 5000000; mv $(echo $FILE | cut -d'_' -f1)*.bam ../05_MappedRhizobia/"; sleep  1; done
 
+
+# 8. Deduplicate
+
+                    mkdir ../06_Deduplicated/
+                        for FILE in $(ls *.bam); do echo $FILE; sbatch --partition=pibu_el8 --job-name=dedup_$(echo $FILE | cut -d'_' -f1) --time=0-22:00:00 --mem-per-cpu=64G --ntasks=8 --cpus-per-task=1 --output=$(echo $FILE | cut -d'_' -f1)_UMIdedup.out --error=$(echo $FILE | cut -d'_' -f1)_UMIdedup.error --mail-type=END,FAIL --wrap " cd /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/05_MappedRhizobia; module load UMI-tools/1.0.1-foss-2021a; module load SAMtools/1.13-GCC-10.3.0; samtools index $FILE; umi_tools dedup --extract-umi-method=read_id --stdin=$FILE --stdout=$(echo $FILE | cut -d'_' -f1)_dedup.bam --paired --unpaired-reads=discard --chimeric-pairs=discard --log=$(echo $FILE | cut -d'_' -f1)_dedup.log; mv $(echo $FILE | cut -d'_' -f1)_dedup.* ../06_Deduplicated/"; done
+#samtools sort -o $(echo $FILE | cut -d'.' -f1)_sorted.bam $FILE ; samtools index $(echo $FILE | cut -d'_' -f1)_MappedMedicago_sorted.bam;
 
 # 8. Counts
 
