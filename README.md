@@ -86,6 +86,12 @@ Download with wget
 
        for FILE in $(ls *.bam ); do echo $FILE; sbatch --partition=pshort_el8 --job-name=FC_$(echo $FILE | cut -d'_' -f1,2) --time=0-02:00:00 --mem-per-cpu=64G --ntasks=1 --cpus-per-task=1 --output=FC_$(echo $FILE | cut -d'_' -f1,2).out --error=FC_$(echo $FILE | cut -d'_' -f1,2).error --mail-type=END,FAIL --wrap "module load Subread; featureCounts -p -M --primary --countReadPairs -t gene -g ID -a /data/projects/p495_SinorhizobiumMeliloti/11_dualRNAseqv2/comp_trial_Axelle/00_ReferenceGenomes/01_Rhizobia/Rhizobium_proteins.gff  -o CountsTableRhizobia_UniqueMultiple_Proteins_$(echo $FILE | cut -d'_' -f1,2).txt $FILE -T 8"; sleep  1; done
 
+
+###  11.  count  reads to all all 
+
+sbatch --partition=pibu_el8 --job-name=FC_all --time=2-02:00:00 --mem-per-cpu=64G --ntasks=16 --cpus-per-task=1 --output=FC_all.out --error=FC_all.error --mail-type=END,FAIL --wrap "module load Subread; featureCounts -p --countReadPairs -t CDS -g ID -a /data/projects/p495_SinorhizobiumMeliloti/20_Nathalie/00_References/FribourgSMeliloti_Prokka_v2.gff -o Final_CountTables_ALL_NCR.txt NCR127_dedup.bam NCR16_dedup.bam NCR17_dedup.bam NCR18_dedup.bam NCR19_dedup.bam NCR20_dedup.bam NCR21_dedup.bam NCR22_dedup.bam NCR23_dedup.bam NCR24_dedup.bam NCR25_dedup.bam NCR26_dedup.bam NCR27_dedup.bam NCR28_dedup.bam NCR84_dedup.bam NCR85_dedup.bam NCR86_dedup.bam NCR87_dedup.bam NCR88_dedup.bam -T 16"
+
+
 # 11. IGView viz create bai file for vizualisation
 
        for FILE in $(ls *.bam); do echo $FILE; sbatch --partition=pshort_el8 --job-name=index_$(echo $FILE | cut -d'_' -f1,2) --time=0-02:00:00 --mem-per-cpu=128G --ntasks=8 --cpus-per-task=1 --output=$(echo $FILE | cut -d'_' -f1,2)_index.out --error=$(echo $FILE | cut -d'_' -f1,2)_index.error --mail-type=END,FAIL --wrap "module load SAMtools/1.13-GCC-10.3.0; cd /data/projects/p495_SinorhizobiumMeliloti/11_dualRNAseqv2/comp_trial_Axelle/03_TrimmedData; samtools index $FILE"; done 
